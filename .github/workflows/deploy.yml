@@ -35,7 +35,17 @@ jobs:
       - name: Zip Lambda Function
         run: zip function.zip index.js
 
-      - name: Deploy to Lambda
+      - name: Deploy Lambda Code
         run: |
           aws lambda update-function-code --function-name HelloWorldLambda --zip-file fileb://function.zip
+
+      - name: Wait for function update to complete
+        run: |
+          while [[ "$(aws lambda get-function --function-name HelloWorldLambda --query 'Configuration.LastUpdateStatus' --output text)" == "InProgress" ]]; do
+            echo "Waiting for Lambda function update to complete..."
+            sleep 5
+          done
+
+      - name: Update Lambda Configuration
+        run: |
           aws lambda update-function-configuration --function-name HelloWorldLambda --environment "Variables={ENV=${{ github.event.inputs.environment }},REASON=${{ github.event.inputs.reason }}}"
