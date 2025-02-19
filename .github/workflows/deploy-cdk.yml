@@ -1,0 +1,56 @@
+name: Deploy to AWS Lambda
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Choose deployment environment"
+        options:
+          - dev
+          - qa
+      reason:
+        type: string
+        description: "Reason for deployment"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Set Environment Variables for Deployment
+        run: |
+          echo "ENV=${{ github.event.inputs.environment }}" >> $GITHUB_ENV
+          echo "REASON=${{ github.event.inputs.reason }}" >> $GITHUB_ENV
+
+      - name: Zip Lambda Function Code
+        run: zip function.zip lambda/index.js
+
+      - name: Deploy Lambda Code
+        run: |
+          aws lambda update-function-code --function-name HelloWorldLambdaA --zip-file fileb://function.zip
+
+      - name: Wait for Lambda Code Update to Complete
+        run: |
+          while [[ "$(aws lambda get-function --function-name HelloWorldLambdaA --query 'Configuration.LastUpdateStatus' --output text)" == "InProgress" ]]; do
+            echo "Waiting for Lambda function update to complete..."
+            sleep 5
+          done
+
+      - name: Update Lambda Configuration
+        run: |
+          aws lambda update-function-configuration --function-name HelloWorldLambdaA --environment "Variables={ENV=${{ github.event.inputs.environment }},REASON=${{ github.event.inputs.reason }}}"
+
+      # Optional: If you want to update the API Gateway stage deployment automatically
+      - name: Deploy API Gateway Stage
+        run: |
+          aws apigateway create-deployment --rest-api-id y7p3slayrf --stage-name ${{ github.event.inputs.environment }}
