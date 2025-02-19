@@ -37,18 +37,18 @@ jobs:
 
       - name: Deploy Lambda Code
         run: |
-          aws lambda update-function-code --function-name HelloWorldLambdaA --zip-file fileb://function.zip
+          aws lambda update-function-code --function-name HelloWorldLambdaAE8EA13A6 --zip-file fileb://function.zip
 
       - name: Wait for Lambda Code Update to Complete
         run: |
-          while [[ "$(aws lambda get-function --function-name HelloWorldLambdaA --query 'Configuration.LastUpdateStatus' --output text)" == "InProgress" ]]; do
+          while [[ "$(aws lambda get-function --function-name HelloWorldLambdaAE8EA13A6 --query 'Configuration.LastUpdateStatus' --output text)" == "InProgress" ]]; do
             echo "Waiting for Lambda function update to complete..."
             sleep 5
           done
 
       - name: Update Lambda Configuration
         run: |
-          aws lambda update-function-configuration --function-name HelloWorldLambdaA --environment "Variables={ENV=${{ github.event.inputs.environment }},REASON=${{ github.event.inputs.reason }}}"
+          aws lambda update-function-configuration --function-name HelloWorldLambdaAE8EA13A6 --environment "Variables={ENV=${{ github.event.inputs.environment }},REASON=${{ github.event.inputs.reason }}}"
 
       # Optional: If you want to update the API Gateway stage deployment automatically
       - name: Deploy API Gateway Stage
